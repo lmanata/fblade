@@ -45,6 +45,7 @@ public class Play extends GameState {
 
 	private int difficulty = 1;
 
+	private float yGravity;
 	private float segmentY = 0;
 	private float score = 0;
 	private float recordfade = 0;
@@ -173,16 +174,7 @@ public class Play extends GameState {
 	public void update(float dt) {
 
 		handleInput();
-
-		if (score > 7)
-			difficulty = 2;
-		if (score > 14)
-			difficulty = 3;
-		if (score > 20)
-			difficulty = 4;
-		if (score > 30)
-			difficulty = 5;
-
+		
 		if (collisions.getCollapse()) {
 			scorehandler.print((Float.toString(score)).substring(0,
 					((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4) + ";");
@@ -209,7 +201,8 @@ public class Play extends GameState {
 		}
 
 		score += 0.02;
-
+		yGravity = ( (score / 10) * 2 ) + 3;
+		
 		for (Body b : bodylist) {
 			zawarudo.destroyBody(b);
 		}
@@ -234,23 +227,7 @@ public class Play extends GameState {
 
 	public void render() {
 
-		switch (difficulty) {
-		case 1:
-			zawarudo.setGravity(new Vector2(0f, 3f));
-			break;
-		case 2:
-			zawarudo.setGravity(new Vector2(0f, 5f));
-			break;
-		case 3:
-			zawarudo.setGravity(new Vector2(0f, 7f));
-			break;
-		case 4:
-			zawarudo.setGravity(new Vector2(0f, 10f));
-			break;
-		case 5:
-			zawarudo.setGravity(new Vector2(0f, 13f));
-			break;
-		}
+		zawarudo.setGravity(new Vector2(0f, yGravity));
 
 		player.getBody().setLinearVelocity(0, zawarudo.getGravity().y);
 
