@@ -25,48 +25,52 @@ public class Segments {
 	public Sprite sprite;
 	public Vector3 position;
 	public Vector3 nextposition;
-	
+
 	public int width = 304;
 	public int height = 16;
-	
-		public void newSegment(World world,float posy){
-			def = new BodyDef();
-			shape= new PolygonShape();
-			fdef= new FixtureDef();
-			
-			texture = Game.res.getTexture("segment");
-			sprite = new Sprite(texture);
-			
-			def.position.set(3.04f,posy);
-			def.type= BodyType.StaticBody;
-			
-			body = world.createBody(def);	
-			shape.setAsBox(3.04f, 0.16f);
-			
-			fdef.shape = shape;
-			fdef.filter.categoryBits = 0;
-			fdef.filter.maskBits = 0;
 
-			Fixture shape_fixture = body.createFixture(fdef);
-			shape_fixture.setUserData("segment");
-			
-			this.world = world;
-			
-			position = new Vector3(3.04f,posy*B2DVars.PPM,0f);
-			nextposition = new Vector3(3.04f,(posy+0.32f)*B2DVars.PPM,0);
-			
-		}
-		
-		public void dispose(){
-			shape.dispose();
-		}
-		
-		public void render(SpriteBatch sb){
-			sb.draw(texture, this.x() * B2DVars.PPM - width, this.y() * B2DVars.PPM - height);
-		}
-		
-		public float x(){return body.getPosition().x;};
-		public float y(){return body.getPosition().y;};
-		
+	public void newSegment(World world, float posy) {
+		def = new BodyDef();
+		shape = new PolygonShape();
+		fdef = new FixtureDef();
+
+		texture = Game.res.getTexture("segment");
+		sprite = new Sprite(texture);
+
+		def.position.set(3.04f, posy);
+		def.type = BodyType.StaticBody;
+
+		body = world.createBody(def);
+		shape.setAsBox(3.04f, 0.16f);
+
+		fdef.shape = shape;
+		fdef.filter.categoryBits = 0;
+		fdef.filter.maskBits = 0;
+
+		Fixture shape_fixture = body.createFixture(fdef);
+		shape_fixture.setUserData("segment");
+
+		this.world = world;
+
+		position = new Vector3(3.04f, posy * B2DVars.PPM, 0f);
+		nextposition = new Vector3(3.04f, (posy + 0.32f) * B2DVars.PPM, 0);
+
 	}
 
+	public void dispose() {
+		shape.dispose();
+	}
+
+	public void render(SpriteBatch sb) {
+		sb.draw(texture, this.x() * B2DVars.PPM - width, this.y() * B2DVars.PPM - height);
+	}
+
+	public float x() {
+		return body.getPosition().x;
+	};
+
+	public float y() {
+		return body.getPosition().y;
+	};
+
+}
