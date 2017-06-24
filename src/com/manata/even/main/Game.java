@@ -60,7 +60,7 @@ public class Game implements ApplicationListener{
 		res.loadTexture("res/maps/tr.jpg", "segment");
 		
 		Sounds.load("res/music/flash of the blade.mp3", "flash of the blade");
-		Sounds.load("res/music/lesnar titantron.mp3", "beast from the east");
+		//Sounds.load("res/music/lesnar titantron.mp3", "beast from the east");
 		Sounds.load("res/music/lesnar 16 bit.mp3", "16 beast");
 		Sounds.load("res/music/wyatt 16 bit.mp3", "menu");
 	}
