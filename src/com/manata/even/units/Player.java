@@ -35,7 +35,7 @@ public class Player {
 
 		playerbody = world.createBody(bdef);
 		PolygonShape pshape = new PolygonShape();
-		pshape.setAsBox(16 / PPM, 16 / PPM);
+		pshape.setAsBox(12 / PPM, 12 / PPM);
 
 		fdef = new FixtureDef();
 		fdef.shape = pshape;

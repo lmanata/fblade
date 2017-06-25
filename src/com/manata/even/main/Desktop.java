@@ -12,8 +12,8 @@ public class Desktop {
 		cfg.title = Game.TITLE;
 		cfg.width = Game.V_WIDTH * Game.SCALE;
 		cfg.height = Game.V_HEIGHT * Game.SCALE;
-		cfg.foregroundFPS = 100;
-		cfg.vSyncEnabled = true;
+		cfg.foregroundFPS = 240;
+		cfg.vSyncEnabled = false;
 		new LwjglApplication(new Game(), cfg);
 	}
 }

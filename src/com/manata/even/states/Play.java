@@ -2,6 +2,7 @@ package com.manata.even.states;
 
 import static com.manata.even.handlers.B2DVars.PPM;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -19,7 +20,6 @@ import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.manata.even.handlers.CollisionHandler;
@@ -45,8 +45,6 @@ public class Play extends GameState {
 	private GlyphLayout layout;
 	private BitmapFont Font;
 
-	private int difficulty = 1;
-
 	private float yGravity;
 	private float segmentY = 0;
 	private float score = 0;
@@ -58,14 +56,12 @@ public class Play extends GameState {
 	private boolean beast = false;
 	private boolean change = true;
 
-	private ArrayList<Body> bodylist = new ArrayList<Body>();
 	private ArrayList<Walls> walls = new ArrayList<Walls>();
 	private ArrayList<Walls> wallsRem = new ArrayList<Walls>();
-	private ArrayList<Segments> segments = new ArrayList<Segments>();
-	private ArrayList<Segments> segsRem = new ArrayList<Segments>();
+	private List<Segments> segments = new ArrayList<Segments>();
+	private List<Segments> segsRem = new ArrayList<Segments>();
 	private ArrayList<Vector2> toadd = new ArrayList<Vector2>();
 
-	private Segments lastSegment;
 	private Matrix4 debugMatrix;
 	private Random randomizer = new Random();
 
@@ -80,7 +76,6 @@ public class Play extends GameState {
 		scorehandler = new ScoreHandler();
 		layout = new GlyphLayout();
 		FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("res/fonts/Hyperspace Bold.ttf"));
-
 		FreeTypeFontParameter s = new FreeTypeFontParameter();
 		s.size = 24;
 		s.color = Color.BLACK;
@@ -145,44 +140,11 @@ public class Play extends GameState {
 		}
 
 		if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-
-			switch (difficulty) {
-			case 1:
-				player.getBody().setLinearVelocity(-6f, zawarudo.getGravity().y);
-				break;
-			case 2:
-				player.getBody().setLinearVelocity(-8f, zawarudo.getGravity().y);
-				break;
-			case 3:
-				player.getBody().setLinearVelocity(-9f, zawarudo.getGravity().y);
-				break;
-			case 4:
-				player.getBody().setLinearVelocity(-12f, zawarudo.getGravity().y);
-				break;
-			case 5:
-				player.getBody().setLinearVelocity(-15f, zawarudo.getGravity().y);
-				break;
-			}
+			player.getBody().setLinearVelocity(-4f, zawarudo.getGravity().y);
 		}
 
 		if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-			switch (difficulty) {
-			case 1:
-				player.getBody().setLinearVelocity(6f, zawarudo.getGravity().y);
-				break;
-			case 2:
-				player.getBody().setLinearVelocity(8f, zawarudo.getGravity().y);
-				break;
-			case 3:
-				player.getBody().setLinearVelocity(9f, zawarudo.getGravity().y);
-				break;
-			case 4:
-				player.getBody().setLinearVelocity(12f, zawarudo.getGravity().y);
-				break;
-			case 5:
-				player.getBody().setLinearVelocity(15f, zawarudo.getGravity().y);
-				break;
-			}
+			player.getBody().setLinearVelocity(4f, zawarudo.getGravity().y);
 		}
 		
 		if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
@@ -206,7 +168,7 @@ public class Play extends GameState {
 		handleSegments();
 		handleInput();
 		
-		//newRandom();
+		newRandom();
 		for (Vector2 vec : toadd)
 			newWall(vec.x, vec.y);
 		toadd.clear();
@@ -226,28 +188,16 @@ public class Play extends GameState {
 		}
 
 		score += 0.02;
+		// temporary line to assist eddybugging
+		score = 0;
 		
 		if( !timeStopped ){
 			yGravity = ( (score / 10) * 2 ) + 3;
 			zawarudo.setGravity(new Vector2( 0f, yGravity));	
 		}
 		
-		for (Body b : bodylist) {
-			zawarudo.destroyBody(b);
-		}
-		bodylist.clear();
-
-		for (Segments s : segsRem) {
-			segments.remove(s);
-			s.shape.dispose();
-		}
-		segsRem.clear();
-
-		for (Walls s : wallsRem) {
-			s.shape.dispose();
-			walls.remove(s);
-		}
-		wallsRem.clear();
+		removeSegments();
+		removeWalls();
 
 		zawarudo.step(dt, 6, 2);
 		player.update(dt);
@@ -256,7 +206,7 @@ public class Play extends GameState {
 
 	public void render() {
 		
-		System.out.println(Gdx.graphics.getFramesPerSecond());
+		//System.out.println(Gdx.graphics.getFramesPerSecond());
 
 		player.getBody().setLinearVelocity(0, zawarudo.getGravity().y);
 
@@ -266,38 +216,10 @@ public class Play extends GameState {
 		sb.setProjectionMatrix(cam.combined);
 		sb.begin();
 
-		for (Segments segment : segments) {
-			if ((!cam.frustum.pointInFrustum(segment.position))
-					&& segment.body.getPosition().y + 5 < player.getPosition().y) {
-				bodylist.add(segment.body);
-				segsRem.add(segment);
-			} else {
-				segment.render(sb, debug);
-			}
-		}
+		segments.forEach((segment) -> segment.render(sb, debug));
+		walls.forEach( (wall) -> wall.render(sb, debug));
 
-		for (Walls wall : walls) {
-			if (!cam.frustum.pointInFrustum(wall.position) && wall.body.getPosition().y < player.getPosition().y) {
-				bodylist.add(wall.body);
-				wallsRem.add(wall);
-			} else {
-				wall.render(sb, debug);
-			}
-		}
-
-		layout.setText(Font, "Score:" + (Float.toString(score)).substring(0,
-				((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4));
-		Font.draw(sb, layout, 0f, cam.position.y - 300);
-
-		if (newrecord) {
-			if (recordfade >= 2) {
-				newrecord = false;
-			} else {
-				recordfade += 0.01;
-				layout.setText(Font, "New Record!");
-				Font.draw(sb, layout, cam.position.x + layout.width, cam.position.y);
-			}
-		}
+		printScore();
 
 		if (debug) {
 			debugMatrix = new Matrix4(b2dCam.combined);
@@ -346,34 +268,39 @@ public class Play extends GameState {
 	}
 
 	public void dispose() {}
-	public void handleSegments(){
-		System.out.println("CAM Y => "+cam.position.y);
+	public void removeWalls(){
+		for (Walls wall : walls) {
+			if (!cam.frustum.pointInFrustum(wall.position) && wall.body.getPosition().y < player.getPosition().y) {
+				zawarudo.destroyBody(wall.body);
+				wall.shape.dispose();
+				wallsRem.add(wall);
+			}
+		}
+		
+		wallsRem.forEach( (wall) -> walls.remove(wall));
+		wallsRem.clear();
+	}
 	
-		if (segments.size() > 0)
-			lastSegment = segments.get(segments.size() - 1);
-		
-		if ( segments.size() == 0){
-			System.out.println("DEBUGGER PLS");	
+	public void removeSegments(){
+		for (Segments segment : segments) {
+			if ((!cam.frustum.pointInFrustum(segment.position))
+					&& segment.body.getPosition().y + 5 < player.getPosition().y) {
+				zawarudo.destroyBody(segment.body);
+				segment.shape.dispose();
+				segsRem.add(segment);
+			}
 		}
 		
-		if( cam.position.y > lastSegment.nextposition.y ){
-			System.out.println("CAM > LAST SEGMENT");
-		}
-		
-//		System.out.println("GOT SEGMENT Y => "+lastSegment.position.y);
-//		System.out.println("NEXT SEGMENT Y => "+lastSegment.nextposition.y);
-//		System.out.println("SEGMENT SIZE => "+segments.size());
-		
-//		if(!(cam.frustum.pointInFrustum(lastSegment.position))){
-//			return;
-//		}
-		
+		segsRem.forEach( (segment) -> segments.remove(segment));
+		segsRem.clear();
+	}
+	
+	public void handleSegments(){
 		while (segments.size() < 55) {
 			newSegment(segmentY);
 		}
-		return;
-		
 	}
+	
 	public void checkCollision(){
 		if (collisions.getCollapse()) {
 			scorehandler.print((Float.toString(score)).substring(0,
@@ -381,5 +308,22 @@ public class Play extends GameState {
 			gsm.setState(GameStateManager.PLAY);
 		}
 	}
+	
+	public void printScore(){
+		layout.setText(Font, "Score:" + (Float.toString(score)).substring(0,
+				((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4));
+		Font.draw(sb, layout, 0f, cam.position.y - 300);
+		
+		if (newrecord) {
+			if (recordfade >= 2) {
+				newrecord = false;
+			} else {
+				recordfade += 0.01;
+				layout.setText(Font, "New Record!");
+				Font.draw(sb, layout, cam.position.x + layout.width, cam.position.y);
+			}
+		}
+	}
+	
 	public void timeStop(){ timeStopped = !timeStopped; }
 }

@@ -15,7 +15,7 @@ public class Game implements ApplicationListener {
 	public static final int V_WIDTH = 608;
 	public static final int V_HEIGHT = 640;
 	public static final int SCALE = 1;
-	public static final float STEP = 1;
+	public static final float STEP = 1 / 30f;
 	public static Content res;
 
 	private SpriteBatch sb;
