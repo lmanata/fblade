@@ -10,11 +10,13 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -33,10 +35,10 @@ import com.manata.even.units.Walls;
 public class Play extends GameState {
 
 	private Player player;
-	private Segments lasts;
 	private ScoreHandler scorehandler;
 	private CollisionHandler collisions;
-
+	private Texture segmentTexture;
+	
 	private World zawarudo;
 	private Box2DDebugRenderer b2dr;
 	private OrthographicCamera b2dCam;
@@ -51,6 +53,7 @@ public class Play extends GameState {
 	private float recordfade = 0;
 
 	private boolean debug;
+	private boolean timeStopped = false;
 	private boolean newrecord = false;
 	private boolean beast = false;
 	private boolean change = true;
@@ -62,12 +65,15 @@ public class Play extends GameState {
 	private ArrayList<Segments> segsRem = new ArrayList<Segments>();
 	private ArrayList<Vector2> toadd = new ArrayList<Vector2>();
 
+	private Segments lastSegment;
+	private Matrix4 debugMatrix;
 	private Random randomizer = new Random();
 
 	public Play(GameStateManager gsm) {
 		super(gsm);
 
 		zawarudo = new World(new Vector2(0f, 0f), true);
+		segmentTexture = Game.res.getTexture("segment");
 		collisions = new CollisionHandler();
 		zawarudo.setContactListener(collisions);
 		b2dr = new Box2DDebugRenderer();
@@ -85,8 +91,8 @@ public class Play extends GameState {
 		player = new Player(zawarudo);
 
 		Sounds.stopall();
-		Sounds.play("flash of the blade");
-		Sounds.loop("flash of the blade");
+		//Sounds.play("flash of the blade");
+		//Sounds.loop("flash of the blade");
 
 		for (int i = 0; i <= 23; i++)
 			newSegment(segmentY);
@@ -112,7 +118,7 @@ public class Play extends GameState {
 		border.newChain(new Vector2(3.04f, segmentY), new Vector2(3.04f, segmentY + 0.32f), zawarudo);
 
 		Segments segment = new Segments();
-		segment.newSegment(zawarudo, y);
+		segment.newSegment(zawarudo, y, segmentTexture);
 
 		segmentY += 0.32f;
 		segments.add(segment);
@@ -121,6 +127,15 @@ public class Play extends GameState {
 
 	public void handleInput() {
 
+		if (Gdx.input.isKeyJustPressed(Input.Keys.Z)) {
+			zawarudo.setGravity(new Vector2(0f, 0f));
+			timeStop();
+		}
+		
+		if (Gdx.input.isKeyJustPressed(Input.Keys.X)) {
+			debug = !debug;
+		}
+		
 		if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
 			walls.clear();
 			segments.clear();
@@ -169,19 +184,29 @@ public class Play extends GameState {
 				break;
 			}
 		}
+		
+		if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+			player.getBody().setLinearVelocity( player.getBody().getLinearVelocity().x, -3f );
+		}
+		
+		if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+			player.getBody().setLinearVelocity( player.getBody().getLinearVelocity().x, 3f );
+		}
 	}
 
 	public void update(float dt) {
-
+		checkCollision();
+		
+		cam.position.set(Game.V_WIDTH / 2, (player.getBody().getPosition().y * PPM) + 280f, 0);
+		cam.update();
+		
+		b2dCam.position.set( (Game.V_WIDTH  / PPM ) / 2, player.getBody().getPosition().y + 280f / 100, 10);
+		b2dCam.update();
+		
+		handleSegments();
 		handleInput();
 		
-		if (collisions.getCollapse()) {
-			scorehandler.print((Float.toString(score)).substring(0,
-					((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4) + ";");
-			gsm.setState(GameStateManager.PLAY);
-		}
-
-		newRandom();
+		//newRandom();
 		for (Vector2 vec : toadd)
 			newWall(vec.x, vec.y);
 		toadd.clear();
@@ -189,8 +214,8 @@ public class Play extends GameState {
 		if (score > scorehandler.topscore) {
 			if (!beast) {
 				Sounds.stopall();
-				Sounds.play("16 beast");
-				Sounds.loop("16 beast");
+				//Sounds.play("16 beast");
+				//Sounds.loop("16 beast");
 			}
 			beast = true;
 			newrecord = true;
@@ -201,7 +226,11 @@ public class Play extends GameState {
 		}
 
 		score += 0.02;
-		yGravity = ( (score / 10) * 2 ) + 3;
+		
+		if( !timeStopped ){
+			yGravity = ( (score / 10) * 2 ) + 3;
+			zawarudo.setGravity(new Vector2( 0f, yGravity));	
+		}
 		
 		for (Body b : bodylist) {
 			zawarudo.destroyBody(b);
@@ -210,12 +239,12 @@ public class Play extends GameState {
 
 		for (Segments s : segsRem) {
 			segments.remove(s);
-			s.dispose();
+			s.shape.dispose();
 		}
 		segsRem.clear();
 
 		for (Walls s : wallsRem) {
-			s.dispose();
+			s.shape.dispose();
 			walls.remove(s);
 		}
 		wallsRem.clear();
@@ -226,27 +255,16 @@ public class Play extends GameState {
 	}
 
 	public void render() {
-
-		zawarudo.setGravity(new Vector2(0f, yGravity));
+		
+		System.out.println(Gdx.graphics.getFramesPerSecond());
 
 		player.getBody().setLinearVelocity(0, zawarudo.getGravity().y);
 
 		Gdx.gl20.glClearColor(0, 0, 0.5f, 1);
 		Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-		cam.position.set(Game.V_WIDTH / 2, (player.getBody().getPosition().y * PPM) + 280f, 0);
-		cam.update();
-
+				
 		sb.setProjectionMatrix(cam.combined);
 		sb.begin();
-
-		if (segments.size() > 0)
-			lasts = segments.get(segments.size() - 1);
-
-		if (!(cam.frustum.pointInFrustum(lasts.nextposition))
-				&& (lasts.nextposition.y - player.getPosition().y * 10) < lasts.nextposition.y) {
-			newSegment(segmentY);
-		}
 
 		for (Segments segment : segments) {
 			if ((!cam.frustum.pointInFrustum(segment.position))
@@ -254,7 +272,7 @@ public class Play extends GameState {
 				bodylist.add(segment.body);
 				segsRem.add(segment);
 			} else {
-				segment.render(sb);
+				segment.render(sb, debug);
 			}
 		}
 
@@ -263,7 +281,7 @@ public class Play extends GameState {
 				bodylist.add(wall.body);
 				wallsRem.add(wall);
 			} else {
-				wall.render(sb);
+				wall.render(sb, debug);
 			}
 		}
 
@@ -282,13 +300,12 @@ public class Play extends GameState {
 		}
 
 		if (debug) {
-			b2dCam.position.set((Game.V_WIDTH / 2) / PPM, (player.getBody().getPosition().y) * PPM, 0);
-			b2dCam.update();
-			b2dr.render(zawarudo, b2dCam.combined);
+			debugMatrix = new Matrix4(b2dCam.combined);
+			debugMatrix.scale(1, 1, 1);
+			b2dr.render(zawarudo, debugMatrix);
 		}
-
-		player.render(sb);
-		cam.update();
+		
+		player.render(sb, debug);		
 		sb.end();
 	}
 
@@ -328,15 +345,41 @@ public class Play extends GameState {
 		return rec;
 	}
 
-	public void dispose() {
+	public void dispose() {}
+	public void handleSegments(){
+		System.out.println("CAM Y => "+cam.position.y);
+	
+		if (segments.size() > 0)
+			lastSegment = segments.get(segments.size() - 1);
+		
+		if ( segments.size() == 0){
+			System.out.println("DEBUGGER PLS");	
+		}
+		
+		if( cam.position.y > lastSegment.nextposition.y ){
+			System.out.println("CAM > LAST SEGMENT");
+		}
+		
+//		System.out.println("GOT SEGMENT Y => "+lastSegment.position.y);
+//		System.out.println("NEXT SEGMENT Y => "+lastSegment.nextposition.y);
+//		System.out.println("SEGMENT SIZE => "+segments.size());
+		
+//		if(!(cam.frustum.pointInFrustum(lastSegment.position))){
+//			return;
+//		}
+		
+		while (segments.size() < 55) {
+			newSegment(segmentY);
+		}
+		return;
+		
 	}
-
-	public boolean debugon() {
-		return debug = true;
+	public void checkCollision(){
+		if (collisions.getCollapse()) {
+			scorehandler.print((Float.toString(score)).substring(0,
+					((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4) + ";");
+			gsm.setState(GameStateManager.PLAY);
+		}
 	}
-
-	public boolean debugoff() {
-		return debug = false;
-	}
-
+	public void timeStop(){ timeStopped = !timeStopped; }
 }

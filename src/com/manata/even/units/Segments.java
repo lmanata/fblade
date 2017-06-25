@@ -12,7 +12,6 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.manata.even.handlers.B2DVars;
-import com.manata.even.main.Game;
 
 public class Segments {
 
@@ -21,20 +20,20 @@ public class Segments {
 	public BodyDef def;
 	public PolygonShape shape;
 	public FixtureDef fdef;
-	public Texture texture;
 	public Sprite sprite;
 	public Vector3 position;
 	public Vector3 nextposition;
-
+	public Texture texture;
+	
 	public int width = 304;
 	public int height = 16;
 
-	public void newSegment(World world, float posy) {
+	public void newSegment(World world, float posy, Texture texture) {
+		this.texture = texture;
+		
 		def = new BodyDef();
 		shape = new PolygonShape();
 		fdef = new FixtureDef();
-
-		texture = Game.res.getTexture("segment");
 		sprite = new Sprite(texture);
 
 		def.position.set(3.04f, posy);
@@ -61,7 +60,10 @@ public class Segments {
 		shape.dispose();
 	}
 
-	public void render(SpriteBatch sb) {
+	public void render(SpriteBatch sb, Boolean debug) {
+		if (debug)
+			return;
+		
 		sb.draw(texture, this.x() * B2DVars.PPM - width, this.y() * B2DVars.PPM - height);
 	}
 

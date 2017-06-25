@@ -67,7 +67,10 @@ public class Player {
 		animation.update(dt);
 	}
 
-	public void render(SpriteBatch sb) {
+	public void render(SpriteBatch sb, Boolean debug) {
+		if (debug)
+			return;
+			
 		sb.draw(animation.getFrame(), playerbody.getPosition().x * B2DVars.PPM - width / 2,
 				playerbody.getPosition().y * B2DVars.PPM - height / 2);
 	}

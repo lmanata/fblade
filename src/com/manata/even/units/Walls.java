@@ -83,7 +83,10 @@ public class Walls {
 		shape.dispose();
 	}
 
-	public void render(SpriteBatch sb) {
+	public void render(SpriteBatch sb, Boolean debug) {
+		if (debug)
+			return;
+		
 		sb.draw(texture, this.x() * B2DVars.PPM - width, this.y() * B2DVars.PPM - height);
 	}
 
