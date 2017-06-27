@@ -173,7 +173,7 @@ public class Play extends GameState {
 			newWall(vec.x, vec.y);
 		toadd.clear();
 
-		if (score > scorehandler.topscore) {
+		if (score > scorehandler.getTopScore()) {
 			if (!beast) {
 				Sounds.stopall();
 				//Sounds.play("16 beast");
@@ -189,7 +189,7 @@ public class Play extends GameState {
 
 		score += 0.02;
 		// temporary line to assist eddybugging
-		score = 0;
+		//score = 0;
 		
 		if( !timeStopped ){
 			yGravity = ( (score / 10) * 2 ) + 3;
@@ -303,8 +303,8 @@ public class Play extends GameState {
 	
 	public void checkCollision(){
 		if (collisions.getCollapse()) {
-			scorehandler.print((Float.toString(score)).substring(0,
-					((Float.toString(score)).length() < 4) ? (Float.toString(score)).length() : 4) + ";");
+			scorehandler.add(score);
+			scorehandler.write();
 			gsm.setState(GameStateManager.PLAY);
 		}
 	}
