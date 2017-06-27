@@ -1,5 +1,9 @@
 package com.manata.even.states;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -27,7 +31,6 @@ public class ScoreState extends GameState {
 
 	private int currentItem;
 	private String[] menuItems;
-	private float[] scoresl;
 
 	public ScoreState(GameStateManager gsm) {
 		super(gsm);
@@ -56,22 +59,19 @@ public class ScoreState extends GameState {
 		font = gen.generateFont(s);
 		Tlayout.setText(tFont, title);
 
-		scoresl = scoreh.getScores(scoreh.scores);
+		
 
-		menuItems = new String[] { "Voltar", "'0'", "'0'", "'0'", "'0'", "'0'", "'0'", "'0'", "'0'", "'0'", };
-
-		if (scoresl == null)
-			System.out.println("itried");
-		for (int i = 0; i < scoresl.length; i++) {
-			if (i == 0) {
-				menuItems[i] = "Voltar";
-				continue;
-			}
-			if (i == 10)
-				break;
-			menuItems[i] = "'" + Float.toString(scoresl[i - 1]) + "'";
-		}
-		;
+		ArrayList<String> tmp = new ArrayList<String>();
+		tmp.add("Voltar");
+		Arrays.stream(scoreh.getSortedScores())
+			  .limit(9)
+			  .map(x -> String.format("%.2f", x))
+			  .collect(Collectors.toCollection(() -> tmp));
+		
+		
+		tmp.forEach((x) -> System.out.println(x));
+		
+		menuItems = tmp.toArray(new String[0]);
 	}
 
 	public void handleInput() {
